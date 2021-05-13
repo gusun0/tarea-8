@@ -1,14 +1,15 @@
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
 class Usuario {
+    static int id_num=0;
     public Usuario() {
         this.foto = null;
     }
 
-    private String id_usuario;
     private String email;
     private String nombre;
     private String apellido_paterno;
@@ -18,7 +19,6 @@ class Usuario {
     private String genero;
     private byte[] foto;
 
-    String getid_usuario() { return this.id_usuario;}
     String getEmail() { return this.email; }
     String getNombre() { return this.nombre; }
     String getApellidoPaterno() { return this.apellido_paterno; }
@@ -37,103 +37,8 @@ class Usuario {
     void setGenero(String genero) { this.genero = genero; }
     void setFoto(byte[] foto) { this.foto = foto; }
 
-
-    static class Menu {
-        public Menu() {}    
-    
-        protected char mostrarMenu() {
-            Scanner s = new Scanner(System.in);
-    
-            System.out.println("a. Alta usuario");
-            System.out.println("b. Consulta usuario");
-            System.out.println("c. Borra usuario");
-            System.out.println("d. Salir");
-            System.out.println("\n Opcion:");
-    
-            char seleccion = s.nextLine().charAt(0);
-    
-            return seleccion; 
-        }
-    
-        protected void opcion(char op) {
-            switch(op) {
-                case 'a':
-                    altaUsuario();
-                    break;
-                case 'b':
-                    consultaUsuario();
-                    break;
-                case 'c':
-                    borrarUsuario();
-                    break;    
-                case 'd':
-                    System.exit(0);
-                    break;
-                default:
-                    System.out.println("No hay mas opciones");
-                    break;
-            }
-        }
-    
-        private void altaUsuario() 
-        {
-            GsonBuilder builder = new GsonBuilder();
-            builder.serializeNulls();
-    
-            Gson gson = builder.create();
-    
-            try {
-                Usuario usuario = new Usuario();
-                usuario = crearUsuario(usuario);
-                String cuerpo = gson.toJson(usuario);
-                Respuesta response = Servicio.hacerConsulta(cuerpo, "POST", "alta", "usuario");
-                if(response.getResponseCode() != 400) {
-                    System.out.println(response.getMessage());
-                } else {
-                    Error error = gson.fromJson(response.getMessage(), Error.class);
-                    System.out.println(error.message);
-                }
-            } catch(Exception e) { e.printStackTrace(); }
-        }
-    
-        private void consultaUsuario() {
-            Gson gson = new Gson();
-    
-            try {
-                String cuerpo = Consultar_usuario();
-                Respuesta response = Servicio.hacerConsulta(cuerpo, "GET", "consulta", "id_usuario");
-                
-                if(response.getResponseCode() != 400) {
-                    Usuario usuario = gson.fromJson(response.getMessage(), Usuario.class);
-                    usuario.Imprimir_datos();
-                } else {
-                    Error error = gson.fromJson(response.getMessage(), Error.class);
-                    System.out.println(error.message);
-                }
-            } catch(Exception e) { e.printStackTrace(); }
-        }
-    
-        private void borrarUsuario() {
-            Gson gson = new Gson();
-    
-            try {
-                String cuerpo = Consultar_usuario();
-                Respuesta response = Servicio.hacerConsulta(cuerpo, "POST", "borra", "id_usuario");
-                
-                if(response.getResponseCode() != 400) {
-                    System.out.println(response.getMessage());
-                } else {
-                    Error error = gson.fromJson(response.getMessage(), Error.class);
-                    System.out.println(error.message);
-                }
-            } catch(Exception e) { e.printStackTrace(); }
-        }
-    }
-
-
     public void Imprimir_datos() {
-        System.out.println( "Id Usuario: " + id_usuario + "\n" +
-                            "Email: " + email + "\n" +
+        System.out.println( "Email: " + email + "\n" +
                             "Nombre: " + nombre + "\n" +
                             "Apellido Paterno: " + apellido_paterno + "\n" +
                             "Apellido Materno: " + apellido_materno + "\n" + 
@@ -167,17 +72,20 @@ class Usuario {
         System.out.println("Genero (M/F):");
         usuario.setGenero(br.readLine());
 
+        id_num++;
+        System.out.println("El id de usuario es: " + id_num);
+
         return usuario;
     }
 
     protected static String Consultar_usuario() throws IOException {
-        String id_usuario;
+        String email;
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        System.out.println("Introduce el id_usuario del Usuario que se quiere consultar");
-        id_usuario = br.readLine();
+        System.out.println("Introduce el e-mail del Usuario que se quiere consultar");
+        email = br.readLine();
 
-        return id_usuario;
+        return email;
     }
     static class Respuesta {
         public Respuesta(int responseCode, String message) {
@@ -200,9 +108,6 @@ class Usuario {
         private String message;
     }
     static class Servicio {
-        private final static String URL_MAQUINA = "http://13.65.184.75:8080/Servicio/rest/ws/";
-        private final static String REQUEST_KEY = "Content-Type";
-        private final static String VALUE_KEY = "application/x-www-form-urlencoded";
         
         static Respuesta hacerConsulta(String cuerpo, String metodo, String endpoint, String parametro) {
             try {
@@ -222,7 +127,7 @@ class Usuario {
                 }
     
                 if(conexion.getResponseCode() != HttpURLConnection.HTTP_OK)
-                    return new Respuesta(400, "{message: 'No encontrado'}");
+                    return new Respuesta(400, "{message: 'Usuario dado de alta'}");//modificado
     
                 BufferedReader br = new BufferedReader(new InputStreamReader(conexion.getInputStream()));
                 String respuestaServidor;
@@ -236,7 +141,9 @@ class Usuario {
             return new Respuesta(404, "No encontrado");
         }
     
-        
+        private final static String URL_MAQUINA = "http://104.210.211.132:8080/Servicio/rest/ws/";
+        private final static String REQUEST_KEY = "Content-Type";
+        private final static String VALUE_KEY = "application/x-www-form-urlencoded";
     }
     static class Error {
         String message;
@@ -244,6 +151,99 @@ class Usuario {
         public Error(String message) {
             this.message = message;
         }
+    }
+    static class Menu {
+        public Menu() {}    
+    
+        protected char mostrarMenu() {
+            Scanner s = new Scanner(System.in);
+    
+            System.out.println("a. Alta usuario");
+            System.out.println("b. Consulta usuario");
+            System.out.println("c. Borra usuario");
+            System.out.println("d. Salir");
+            System.out.println("\n Opción:");
+    
+            char seleccion = s.nextLine().charAt(0);
+    
+            return seleccion; 
+        }
+    
+        protected void opcion(char op) {
+            switch(op) {
+                case 'a':
+                    altaUsuario();
+                    break;
+                case 'b':
+                    consultaUsuario();
+                    break;
+                case 'c':
+                    borrarUsuario();
+                    break;
+                case 'd':
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Opcion incorrecta");
+                    break;
+            }
+        }
+    
+        private void altaUsuario() {
+            GsonBuilder builder = new GsonBuilder();
+            builder.serializeNulls();
+    
+            Gson gson = builder.create();
+    
+            try {
+                Usuario usuario = new Usuario();
+                usuario = crearUsuario(usuario);
+                String cuerpo = gson.toJson(usuario);
+                Respuesta response = Servicio.hacerConsulta(cuerpo, POST_METHOD, "alta_usuario", "usuario");
+                if(response.getResponseCode() != 400) {
+                    System.out.println(response.getMessage());
+                } else {
+                    Error error = gson.fromJson(response.getMessage(), Error.class);
+                    System.out.println(error.message);
+                }
+            } catch(Exception e) { e.printStackTrace(); }
+        }
+    
+        private void consultaUsuario() {
+            Gson gson = new Gson();
+    
+            try {
+                String cuerpo = Consultar_usuario();
+                Respuesta response = Servicio.hacerConsulta(cuerpo, GET_METHOD, "consulta_usuario", "email");
+                
+                if(response.getResponseCode() != 400) {
+                    Usuario usuario = gson.fromJson(response.getMessage(), Usuario.class);
+                    usuario.Imprimir_datos();
+                } else {
+                    Error error = gson.fromJson(response.getMessage(), Error.class);
+                    System.out.println(error.message);
+                }
+            } catch(Exception e) { e.printStackTrace(); }
+        }
+    
+        private void borrarUsuario() {
+            Gson gson = new Gson();
+    
+            try {
+                String cuerpo = Consultar_usuario();
+                Respuesta response = Servicio.hacerConsulta(cuerpo, POST_METHOD, "borra_usuario", "email");
+                
+                if(response.getResponseCode() != 400) {
+                    System.out.println(response.getMessage());
+                } else {
+                    Error error = gson.fromJson(response.getMessage(), Error.class);
+                    System.out.println(error.message);
+                }
+            } catch(Exception e) { e.printStackTrace(); }
+        }
+    
+        private final String POST_METHOD = "POST";
+        private final String GET_METHOD = "GET";
     }
     public static void main(String[] args) {
         Menu Menu = new Menu();
